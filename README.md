@@ -63,3 +63,4 @@ Replace `server.example` with the server hostname and `3000` with the customized
 - Regex log matching
 - JSON format/wrapping with more info, maybe on another path
 - Linting, correct formatting
+- Optimizations for multiple clients accessing the same file
