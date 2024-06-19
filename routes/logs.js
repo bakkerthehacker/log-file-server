@@ -75,16 +75,10 @@ const writeLinesToResponse = (res) => {
   const writeAsync = util.promisify(res.write).bind(res)
   return async function* (lines) {
     for await (const line of lines) {
-      
-      
-
       const promises = []
       promises.push(writeAsync(line))
       promises.push(writeAsync('\n'))
       await Promise.all(promises)
-
-      // res.write(line)
-      // res.write('\n')
     }
   }
 }
