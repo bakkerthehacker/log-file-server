@@ -39,7 +39,12 @@ The only important url when using the log server is `/logs`.  This takes 3 param
 
 ### Curl Example:
 
-As an example, if the log you want to look at is `/var/log/dmesg` and the filter is for log lines containing the text `Bluetooth` and you only want the latest 3 log lines, the curl command to see these logs is:
+As an example,
+  - if the log you want to look at is `/var/log/dmesg`
+  - and the filter is for log lines containing the text `Bluetooth`
+  - and you only want the latest 3 log lines
+
+the curl command to see these logs is:
 
 `curl 'http://server.example:3000/logs?filename=dmesg&filter=Bluetooth&count=3'`
 
@@ -57,3 +62,4 @@ Replace `server.example` with the server hostname and `3000` with the customized
 - Case insensitive log matching
 - Regex log matching
 - JSON format/wrapping with more info, maybe on another path
+- Linting, correct formatting

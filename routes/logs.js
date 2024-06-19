@@ -10,6 +10,8 @@ const MAX_CHUNK_SIZE = 16 * 1024 * 1024;
 const LOG_LOCATION = '/var/log'
 
 
+// starting at the end of the file, grab chunks of the file
+// all chunks except the first chunk will be the max size
 const getReverseFileChunks = (fileHandle) => async function* ({ signal }) {
   const { size } = await fileHandle.stat();
   // console.dir({ size })
@@ -38,6 +40,10 @@ const getReverseFileChunks = (fileHandle) => async function* ({ signal }) {
 
 }
 
+// Take a chunk of a log file and split it by newlines
+// then reverse the order
+// if a line crossess between multiple chunks
+// its merged together once both pieces are processed
 const splitAndReverseChunk = async function* (chunks) {
   let previousFragment = '';
 
@@ -71,6 +77,8 @@ const debugPrintLines = async function* (lines) {
 }
 
 
+// Send log lines to express response
+// Have to wait on write promises to avoid buffering too much data
 const writeLinesToResponse = (res) => {
   const writeAsync = util.promisify(res.write).bind(res)
   return async function* (lines) {
@@ -83,6 +91,7 @@ const writeLinesToResponse = (res) => {
   }
 }
 
+// Only process log lines that include the filter
 const filterLines = (filter) => {
   return async function* (lines) {
     for await (const line of lines) {
@@ -93,6 +102,7 @@ const filterLines = (filter) => {
   }
 }
 
+// Only process a certain number of log lines up to the limit
 const limitLineCount = (limit) => {
   let count = 0;
   return async function* (lines) {
