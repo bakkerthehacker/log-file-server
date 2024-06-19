@@ -5,12 +5,12 @@ const fs = require('fs/promises')
 const util = require('util')
 const path = require('path')
 
-const MAX_CHUNK_SIZE = 16 * 1024;
+const MAX_CHUNK_SIZE = 16 * 1024 * 1024;
 // const MAX_CHUNK_SIZE = 1000;
 const LOG_LOCATION = '/var/log'
 
 
-const getReverseFileChunks = async function* (fileHandle) {
+const getReverseFileChunks = (fileHandle) => async function* ({ signal }) {
   const { size } = await fileHandle.stat();
   // console.dir({ size })
 
@@ -35,6 +35,7 @@ const getReverseFileChunks = async function* (fileHandle) {
     start -= MAX_CHUNK_SIZE;
     chunkSize = MAX_CHUNK_SIZE;
   }
+
 }
 
 const splitAndReverseChunk = async function* (chunks) {
@@ -74,8 +75,16 @@ const writeLinesToResponse = (res) => {
   const writeAsync = util.promisify(res.write).bind(res)
   return async function* (lines) {
     for await (const line of lines) {
-      await writeAsync(line)
-      await writeAsync('\n')
+      
+      
+
+      const promises = []
+      promises.push(writeAsync(line))
+      promises.push(writeAsync('\n'))
+      await Promise.all(promises)
+
+      // res.write(line)
+      // res.write('\n')
     }
   }
 }
@@ -83,7 +92,7 @@ const writeLinesToResponse = (res) => {
 const filterLines = (filter) => {
   return async function* (lines) {
     for await (const line of lines) {
-      if(line.includes(filter)){
+      if (line.includes(filter)) {
         yield line;
       }
     }
@@ -91,12 +100,12 @@ const filterLines = (filter) => {
 }
 
 const limitLineCount = (limit) => {
-  let count = 0 ;
+  let count = 0;
   return async function* (lines) {
     for await (const line of lines) {
-      count ++;
+      count++;
       yield line;
-      if(count >= limit){
+      if (count >= limit) {
         break;
       }
     }
@@ -108,23 +117,23 @@ router.get('/', async function (req, res, next) {
   // console.dir(req.params)
   // console.dir(req.query)
 
-  const {filename, filter, count}  = req.query;
+  const { filename, filter, count } = req.query;
 
-  if(!filename){
+  if (!filename) {
     next(new Error('must provide log filename'))
     return;
   }
   const logPath = path.join(LOG_LOCATION, filename)
 
   // check for trying to escape log folder using ..
-  if(!logPath.startsWith(LOG_LOCATION)){
+  if (!logPath.startsWith(LOG_LOCATION)) {
     next(new Error('log filename must be in log folder'))
     return;
   }
 
-  
-  try{
-    await fs.access(logPath,  fs.constants.R_OK);
+
+  try {
+    await fs.access(logPath, fs.constants.R_OK);
   } catch {
     next(new Error(`cannot access log file ${logPath}`))
     return;
@@ -134,12 +143,12 @@ router.get('/', async function (req, res, next) {
 
   const transforms = [splitAndReverseChunk];
 
-  if(filter){
+  if (filter) {
     transforms.push(filterLines(filter))
   }
-  if(count){
+  if (count) {
     const limitNumber = Number(count)
-    if(Number.isNaN(limitNumber)){
+    if (Number.isNaN(limitNumber)) {
       next(new Error(`line count ${count} is not a number`))
       return;
     }
